@@ -1,16 +1,10 @@
-# Copy this file to: config/release_config.yaml and edit values as needed.
+tag: "Android-sdk-2.1.6"
 
-# If tag is empty, tool auto-detects latest tag and previous tag.
-tag: ""
+date: "03.28.2026"
 
-# Default date string to print (if empty, uses today's date)
-date: ""
+platform: "Android"
+version: "2.1.6"
 
-# Optional manual overrides (if you don't want tag parsing)
-platform: ""   # iOS / Android
-version: ""    # 2.1.5
-
-# Release note content (used in addition to parsed commits)
 new_functionalities:
   - "Set/Get Sample Rate function added."
 
@@ -21,9 +15,9 @@ enhancements:
   - "SDK Doc update."
 
 previous_versions:
-  - version: "v2.1.4"
+  - version: "v2.1.5"
     description: "Update SDK_EX_Guide.md : content"
-  - version: "v2.1.3"
+  - version: "v2.1.4"
     description: "Update Error handling fix code SDK file"
 
 contact:
@@ -33,5 +27,5 @@ contact:
 
 slack:
   enabled: false
-  webhook_url: ""   # paste incoming webhook URL here
-  channel_note: "UAT"  # optional label included in message
+  webhook_url: ""
+  channel_note: "UAT"
