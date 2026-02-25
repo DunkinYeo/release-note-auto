@@ -1,6 +1,6 @@
 .venv/
 __pycache__/
 output/
-config/release_config.yaml
+# config/release_config.yaml  ← committed intentionally (no secrets inside)
 .DS_Store
 *.pyc

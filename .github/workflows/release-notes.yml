@@ -39,31 +39,25 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Create release config from inputs / tag
+      - name: Inject Slack webhook from secret
         env:
-          INPUT_TAG: ${{ github.event.inputs.tag }}
-          INPUT_PLATFORM: ${{ github.event.inputs.platform }}
-          INPUT_VERSION: ${{ github.event.inputs.version }}
-          CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
-          CONTACT_PHONE: ${{ secrets.CONTACT_PHONE }}
-          CONTACT_ADDRESS: ${{ secrets.CONTACT_ADDRESS }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          cat > config/release_config.yaml <<EOF
-          tag: "${INPUT_TAG}"
-          date: ""
-          platform: "${INPUT_PLATFORM}"
-          version: "${INPUT_VERSION}"
-          new_functionalities: []
-          enhancements: []
-          previous_versions: []
-          contact:
-            email: "${CONTACT_EMAIL:-spatch.cardio@wellysis.com}"
-            phone: "${CONTACT_PHONE:-+1 281 965 0330}"
-            address: "${CONTACT_ADDRESS:-2450 Holcombe Blvd, Houston, TX 77021}"
-          slack:
-            enabled: false
-            webhook_url: ""
-          EOF
+          [ -z "$SLACK_WEBHOOK_URL" ] && exit 0
+          python - <<'PY'
+          import yaml, os, re
+
+          cfg_path = "config/release_config.yaml"
+          with open(cfg_path, "r") as f:
+              cfg = yaml.safe_load(f)
+
+          cfg.setdefault("slack", {})
+          cfg["slack"]["enabled"] = True
+          cfg["slack"]["webhook_url"] = os.environ["SLACK_WEBHOOK_URL"]
+
+          with open(cfg_path, "w") as f:
+              yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False)
+          PY
 
       - name: Generate PDF & Screenshot
         run: python main.py
@@ -83,7 +77,6 @@ jobs:
           retention-days: 90
 
       - name: Notify Slack
-        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
@@ -91,6 +84,7 @@ jobs:
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
+          [ -z "$SLACK_WEBHOOK_URL" ] && exit 0
           ARTIFACT_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           TAG="${GITHUB_REF_NAME}"
           PAYLOAD=$(cat <<JSON
