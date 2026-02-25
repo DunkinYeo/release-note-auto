@@ -1,26 +1,34 @@
 product_type: "sdk"
 product_name: "Wellysis"
-tag: "Android-sdk-2.1.6"
-date: "03.28.2026"
-platform: "Android"
-version: "2.1.6"
+tag: "ios-sdk-2.1.7"
+date: "February 25, 2026"
+platform: "iOS"
+version: "2.1.7"
+
 new_functionalities:
-  - "Set/Get Sample Rate function added."
+  - "Added multi-lead ECG recording support."
+  - "New SpO2 continuous monitoring API."
+
 enhancements:
-  - "Improved BLE stability."
-  - "Error Handling, Timeout improvements."
-  - "General Improvements - Bug fix."
-  - "SDK Doc update."
+  - "Improved BLE connection stability on iOS 17."
+  - "Reduced SDK initialization time by 30%."
+  - "Error handling improvements for timeout scenarios."
+  - "SDK documentation updated."
+
 previous_versions:
+  - version: "v2.1.6"
+    description: "Android SDK — Set/Get Sample Rate function added"
   - version: "v2.1.5"
-    description: "Update SDK_EX_Guide.md : content"
+    description: "Update SDK_EX_Guide.md content"
   - version: "v2.1.4"
     description: "Update Error handling fix code SDK file"
+
 contact:
   email: "spatch.cardio@wellysis.com"
   phone: "+1 281 965 0330"
   address: "2450 Holcombe Blvd, Houston, TX 77021"
+
 slack:
   enabled: false
   webhook_url: ""
-  channel_note: "UAT"
+  channel_note: ""
