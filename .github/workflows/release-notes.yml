@@ -1,0 +1,133 @@
+name: SDK Release Notes
+
+on:
+  push:
+    tags:
+      - 'ios-sdk-*'
+      - 'android-sdk-*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to generate release notes for (e.g. ios-sdk-2.1.5). Leave empty to auto-detect.'
+        required: false
+        default: ''
+      platform:
+        description: 'Platform override (iOS / Android). Leave empty to parse from tag.'
+        required: false
+        default: ''
+      version:
+        description: 'Version override (e.g. 2.1.5). Leave empty to parse from tag.'
+        required: false
+        default: ''
+
+jobs:
+  generate:
+    name: Generate Release Notes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history for git log)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create release config from inputs / tag
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          INPUT_PLATFORM: ${{ github.event.inputs.platform }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+          CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
+          CONTACT_PHONE: ${{ secrets.CONTACT_PHONE }}
+          CONTACT_ADDRESS: ${{ secrets.CONTACT_ADDRESS }}
+        run: |
+          cat > config/release_config.yaml <<EOF
+          tag: "${INPUT_TAG}"
+          date: ""
+          platform: "${INPUT_PLATFORM}"
+          version: "${INPUT_VERSION}"
+          new_functionalities: []
+          enhancements: []
+          previous_versions: []
+          contact:
+            email: "${CONTACT_EMAIL:-spatch.cardio@wellysis.com}"
+            phone: "${CONTACT_PHONE:-+1 281 965 0330}"
+            address: "${CONTACT_ADDRESS:-2450 Holcombe Blvd, Houston, TX 77021}"
+          slack:
+            enabled: false
+            webhook_url: ""
+          EOF
+
+      - name: Generate PDF & Screenshot
+        run: python main.py
+
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes-pdf
+          path: output/pdf/*.pdf
+          retention-days: 90
+
+      - name: Upload Screenshot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes-screenshot
+          path: output/screenshot/*.png
+          retention-days: 90
+
+      - name: Notify Slack
+        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          ARTIFACT_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          TAG="${GITHUB_REF_NAME}"
+          PAYLOAD=$(cat <<JSON
+          {
+            "blocks": [
+              {
+                "type": "header",
+                "text": {
+                  "type": "plain_text",
+                  "text": "SDK Release Notes Generated",
+                  "emoji": true
+                }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Tag:*\n\`${TAG}\`"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Status:*\nSuccess"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Artifacts (PDF + Screenshot):*\n<${ARTIFACT_URL}|View in GitHub Actions>"
+                }
+              }
+            ]
+          }
+          JSON
+          )
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
