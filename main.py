@@ -32,11 +32,19 @@ def main():
     latest_tag, prev_tag = detect_tags(tag_override=tag)
     parsed = parse_tag(latest_tag)
 
-    # Config overrides parsed tag values when explicitly set
-    product_type = (cfg.get("product_type") or "").strip() or parsed["product_type"]
-    product_name = (cfg.get("product_name") or "").strip() or parsed["product_name"]
-    platform     = (cfg.get("platform")     or "").strip() or parsed["platform"]
-    version      = (cfg.get("version")      or "").strip() or parsed["version"]
+    # If config explicitly sets product_type, trust config for type-specific fields
+    # (avoids a FW config picking up 'Android' platform from an unrelated SDK tag)
+    cfg_type = (cfg.get("product_type") or "").strip()
+    if cfg_type:
+        product_type = cfg_type
+        product_name = (cfg.get("product_name") or "").strip() or parsed["product_name"]
+        platform     = (cfg.get("platform")     or "").strip()          # config only, no tag fallback
+        version      = (cfg.get("version")      or "").strip() or parsed["version"]
+    else:
+        product_type = parsed["product_type"]
+        product_name = (cfg.get("product_name") or "").strip() or parsed["product_name"]
+        platform     = (cfg.get("platform")     or "").strip() or parsed["platform"]
+        version      = (cfg.get("version")      or "").strip() or parsed["version"]
 
     # Collect commits between tags (if prev exists)
     commits = collect_commit_subjects(prev_tag, latest_tag)
