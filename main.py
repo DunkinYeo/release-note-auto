@@ -1,5 +1,6 @@
 import os
 import datetime
+import argparse
 import yaml
 
 from src.git_tools import detect_tags, parse_tag, collect_commit_subjects
@@ -8,6 +9,15 @@ from src.screenshot import pdf_to_png
 from src.slack_notify import notify_webhook
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
+
+def parse_args():
+    p = argparse.ArgumentParser(description="Generate Wellysis Release Notes")
+    p.add_argument("--tag",          default="", help="Tag override (e.g. ios-sdk-2.1.7)")
+    p.add_argument("--platform",     default="", help="Platform override (iOS / Android)")
+    p.add_argument("--version",      default="", help="Version override (e.g. 2.1.7)")
+    p.add_argument("--product-type", default="", dest="product_type", help="sdk | app | fw")
+    p.add_argument("--product-name", default="", dest="product_name", help="Display name (e.g. 'S-patch Ex')")
+    return p.parse_args()
 
 def load_config():
     cfg_path = os.path.join(ROOT, "config", "release_config.yaml")
@@ -19,6 +29,7 @@ def ensure_output_dirs():
     os.makedirs(os.path.join(ROOT, "output", "screenshot"), exist_ok=True)
 
 def main():
+    args = parse_args()
     ensure_output_dirs()
     cfg = load_config()
 
@@ -27,24 +38,27 @@ def main():
     if not date_str:
         date_str = datetime.date.today().strftime("%B %d, %Y")
 
-    # Tag + range
-    tag = (cfg.get("tag") or "").strip() or None
+    # Priority: CLI args > config > tag-parsed values
+    # Tag: CLI → config → auto-detect
+    tag = args.tag or (cfg.get("tag") or "").strip() or None
     latest_tag, prev_tag = detect_tags(tag_override=tag)
     parsed = parse_tag(latest_tag)
 
-    # If config explicitly sets product_type, trust config for type-specific fields
-    # (avoids a FW config picking up 'Android' platform from an unrelated SDK tag)
-    cfg_type = (cfg.get("product_type") or "").strip()
-    if cfg_type:
-        product_type = cfg_type
-        product_name = (cfg.get("product_name") or "").strip() or parsed["product_name"]
-        platform     = (cfg.get("platform")     or "").strip()          # config only, no tag fallback
-        version      = (cfg.get("version")      or "").strip() or parsed["version"]
+    # product_type: CLI → config → tag-parsed
+    cli_type = args.product_type.strip()
+    cfg_type  = (cfg.get("product_type") or "").strip()
+    explicit_type = cli_type or cfg_type  # any explicit declaration wins
+
+    if explicit_type:
+        product_type = explicit_type
+        product_name = (args.product_name or cfg.get("product_name") or "").strip() or parsed["product_name"]
+        platform     = (args.platform     or cfg.get("platform")     or "").strip()   # no tag fallback when type is explicit
+        version      = (args.version      or cfg.get("version")      or "").strip() or parsed["version"]
     else:
         product_type = parsed["product_type"]
-        product_name = (cfg.get("product_name") or "").strip() or parsed["product_name"]
-        platform     = (cfg.get("platform")     or "").strip() or parsed["platform"]
-        version      = (cfg.get("version")      or "").strip() or parsed["version"]
+        product_name = (args.product_name or cfg.get("product_name") or "").strip() or parsed["product_name"]
+        platform     = (args.platform     or cfg.get("platform")     or "").strip() or parsed["platform"]
+        version      = (args.version      or cfg.get("version")      or "").strip() or parsed["version"]
 
     # Collect commits between tags (if prev exists)
     commits = collect_commit_subjects(prev_tag, latest_tag)

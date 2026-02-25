@@ -13,15 +13,23 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to generate release notes for (e.g. ios-sdk-2.1.5). Leave empty to auto-detect.'
+        description: 'Tag (e.g. ios-sdk-2.1.7). Leave empty to use tag in config.'
         required: false
         default: ''
       platform:
-        description: 'Platform override (iOS / Android). Leave empty to parse from tag.'
+        description: 'Platform override: iOS | Android. Leave empty to parse from tag.'
         required: false
         default: ''
       version:
-        description: 'Version override (e.g. 2.1.5). Leave empty to parse from tag.'
+        description: 'Version override (e.g. 2.1.7). Leave empty to parse from tag.'
+        required: false
+        default: ''
+      product_type:
+        description: 'Product type override: sdk | app | fw. Leave empty to parse from tag.'
+        required: false
+        default: ''
+      product_name:
+        description: 'Product name override (e.g. S-patch Ex). Leave empty to parse from tag.'
         required: false
         default: ''
 
@@ -65,7 +73,20 @@ jobs:
           PY
 
       - name: Generate PDF & Screenshot
-        run: python main.py
+        env:
+          INPUT_TAG:          ${{ github.event.inputs.tag }}
+          INPUT_PLATFORM:     ${{ github.event.inputs.platform }}
+          INPUT_VERSION:      ${{ github.event.inputs.version }}
+          INPUT_PRODUCT_TYPE: ${{ github.event.inputs.product_type }}
+          INPUT_PRODUCT_NAME: ${{ github.event.inputs.product_name }}
+        run: |
+          ARGS=""
+          [ -n "$INPUT_TAG" ]          && ARGS="$ARGS --tag $INPUT_TAG"
+          [ -n "$INPUT_PLATFORM" ]     && ARGS="$ARGS --platform $INPUT_PLATFORM"
+          [ -n "$INPUT_VERSION" ]      && ARGS="$ARGS --version $INPUT_VERSION"
+          [ -n "$INPUT_PRODUCT_TYPE" ] && ARGS="$ARGS --product-type $INPUT_PRODUCT_TYPE"
+          [ -n "$INPUT_PRODUCT_NAME" ] && ARGS="$ARGS --product-name \"$INPUT_PRODUCT_NAME\""
+          python main.py $ARGS
 
       - name: Upload PDF artifact
         uses: actions/upload-artifact@v4
@@ -80,53 +101,3 @@ jobs:
           name: release-notes-screenshot
           path: output/screenshot/*.png
           retention-days: 90
-
-      - name: Notify Slack
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SERVER_URL: ${{ github.server_url }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-        run: |
-          [ -z "$SLACK_WEBHOOK_URL" ] && exit 0
-          ARTIFACT_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          TAG="${GITHUB_REF_NAME}"
-          PAYLOAD=$(cat <<JSON
-          {
-            "blocks": [
-              {
-                "type": "header",
-                "text": {
-                  "type": "plain_text",
-                  "text": "SDK Release Notes Generated",
-                  "emoji": true
-                }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Tag:*\n\`${TAG}\`"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Status:*\nSuccess"
-                  }
-                ]
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "*Artifacts (PDF + Screenshot):*\n<${ARTIFACT_URL}|View in GitHub Actions>"
-                }
-              }
-            ]
-          }
-          JSON
-          )
-          curl -s -X POST "$SLACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "$PAYLOAD"
