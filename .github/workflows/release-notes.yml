@@ -7,6 +7,9 @@ on:
       - 'iOS-sdk-*'
       - 'android-sdk-*'
       - 'Android-sdk-*'
+      - 'fw-*'
+      - '*-ios-*'
+      - '*-android-*'
   workflow_dispatch:
     inputs:
       tag:

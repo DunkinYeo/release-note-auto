@@ -30,11 +30,13 @@ def main():
     # Tag + range
     tag = (cfg.get("tag") or "").strip() or None
     latest_tag, prev_tag = detect_tags(tag_override=tag)
-    platform, version = parse_tag(latest_tag)
+    parsed = parse_tag(latest_tag)
 
-    # Manual override (optional)
-    platform = (cfg.get("platform") or "").strip() or platform
-    version = (cfg.get("version") or "").strip() or version
+    # Config overrides parsed tag values when explicitly set
+    product_type = (cfg.get("product_type") or "").strip() or parsed["product_type"]
+    product_name = (cfg.get("product_name") or "").strip() or parsed["product_name"]
+    platform     = (cfg.get("platform")     or "").strip() or parsed["platform"]
+    version      = (cfg.get("version")      or "").strip() or parsed["version"]
 
     # Collect commits between tags (if prev exists)
     commits = collect_commit_subjects(prev_tag, latest_tag)
@@ -49,8 +51,11 @@ def main():
     contact = cfg.get("contact") or {}
     slack_cfg = cfg.get("slack") or {}
 
-    out_pdf = os.path.join(ROOT, "output", "pdf", f"Wellysis_{platform}_SDK_{version}_Release_Notes.pdf")
-    out_png = os.path.join(ROOT, "output", "screenshot", f"Wellysis_{platform}_SDK_{version}_Release_Notes.png")
+    # Build output filename from product info
+    parts = [product_name.replace(" ", "_"), platform, product_type.upper(), version, "Release_Notes"]
+    base = "_".join(p for p in parts if p)
+    out_pdf = os.path.join(ROOT, "output", "pdf", f"{base}.pdf")
+    out_png = os.path.join(ROOT, "output", "screenshot", f"{base}.png")
 
     build_release_note_pdf(
         pdf_path=out_pdf,
@@ -61,13 +66,16 @@ def main():
         enhancements=enhancements,
         previous_versions=previous_versions,
         contact=contact,
+        product_type=product_type,
+        product_name=product_name,
     )
 
     pdf_to_png(out_pdf, out_png, dpi=300)
 
     if bool(slack_cfg.get("enabled")) and slack_cfg.get("webhook_url"):
         note = slack_cfg.get("channel_note", "")
-        msg = f"✅ {platform} SDK {version} Release Notes generated ({date_str})." + (f" [{note}]" if note else "")
+        label = f"{product_name} {platform} {product_type.upper()} {version}".strip()
+        msg = f"✅ {label} Release Notes generated ({date_str})." + (f" [{note}]" if note else "")
         notify_webhook(slack_cfg["webhook_url"], msg, out_pdf, out_png)
 
     print("Done:")

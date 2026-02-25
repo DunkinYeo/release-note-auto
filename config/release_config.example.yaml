@@ -1,37 +1,56 @@
-# Copy this file to: config/release_config.yaml and edit values as needed.
+# ──────────────────────────────────────────────────────────
+# Release Note Auto — config template
+# Copy to config/release_config.yaml and edit values below.
+# ──────────────────────────────────────────────────────────
 
-# If tag is empty, tool auto-detects latest tag and previous tag.
+# product_type: sdk | app | fw
+product_type: "sdk"
+
+# product_name: shown in PDF header (auto-detected from tag if omitted)
+#   sdk → "Wellysis" (default)
+#   app → e.g. "S-patch Ex"
+#   fw  → "Wellysis" (default)
+product_name: ""
+
+# tag: leave empty to auto-detect latest git tag
+# Tag conventions:
+#   SDK : ios-sdk-2.1.6  /  android-sdk-2.1.6
+#   App : spatchex-ios-1.6.8  /  spatchex-android-1.6.8
+#   FW  : fw-2.4.6
 tag: ""
 
-# Default date string to print (if empty, uses today's date)
+# date: official release date (empty = today)
 date: ""
 
-# Optional manual overrides (if you don't want tag parsing)
-platform: ""   # iOS / Android
-version: ""    # 2.1.5
+# platform / version: override tag-parsed values if needed
+platform: ""   # iOS | Android | (empty for FW)
+version: ""    # e.g. 2.1.6
 
-# Release note content (used in addition to parsed commits)
+# ── Content ───────────────────────────────────────────────
 new_functionalities:
-  - "Set/Get Sample Rate function added."
+  - "New feature description here."
 
 enhancements:
   - "Improved BLE stability."
   - "Error Handling, Timeout improvements."
   - "General Improvements - Bug fix."
-  - "SDK Doc update."
 
 previous_versions:
+  - version: "v2.1.5"
+    description: "Previous release summary"
   - version: "v2.1.4"
-    description: "Update SDK_EX_Guide.md : content"
-  - version: "v2.1.3"
-    description: "Update Error handling fix code SDK file"
+    description: "Previous release summary"
 
+# ── Contact ───────────────────────────────────────────────
 contact:
   email: "spatch.cardio@wellysis.com"
   phone: "+1 281 965 0330"
   address: "2450 Holcombe Blvd, Houston, TX 77021"
 
+# ── Slack ─────────────────────────────────────────────────
+# In GitHub Actions, webhook_url is injected from SLACK_WEBHOOK_URL secret.
+# For local runs, set enabled: true and paste the URL below.
 slack:
   enabled: false
-  webhook_url: ""   # paste incoming webhook URL here
-  channel_note: "UAT"  # optional label included in message
+  webhook_url: ""
+  channel_note: ""

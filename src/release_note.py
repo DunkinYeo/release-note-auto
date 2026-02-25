@@ -4,6 +4,21 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 
+def _make_doc_title(product_type: str, product_name: str, platform: str, version: str) -> str:
+    """Compose the subtitle line above 'Release Notes' heading."""
+    pt = product_type.lower()
+    if pt == "fw":
+        return f"{product_name} Firmware {version}"
+    if pt == "app":
+        if platform:
+            return f"{product_name} {platform} App {version}"
+        return f"{product_name} App {version}"
+    # sdk (default)
+    if platform:
+        return f"{product_name} {platform} SDK {version}"
+    return f"{product_name} SDK {version}"
+
+
 def build_release_note_pdf(
     pdf_path: str,
     platform: str,
@@ -13,8 +28,11 @@ def build_release_note_pdf(
     enhancements: list,
     previous_versions: list,
     contact: dict,
+    product_type: str = "sdk",
+    product_name: str = "Wellysis",
 ):
-    # Tuned to match your Android release note readability
+    doc_title = _make_doc_title(product_type, product_name, platform, version)
+
     title = ParagraphStyle(name="Title", fontSize=24, leading=30, spaceAfter=10)
     subtitle = ParagraphStyle(name="Subtitle", fontSize=13, spaceAfter=6)
     section = ParagraphStyle(name="Section", fontSize=12, spaceBefore=16, spaceAfter=8)
@@ -29,7 +47,7 @@ def build_release_note_pdf(
         rightMargin=72,
         topMargin=80,
         bottomMargin=80,
-        title=f"Wellysis {platform} SDK {version} Release Notes"
+        title=f"{doc_title} Release Notes"
     )
 
     elements = []
@@ -50,7 +68,7 @@ def build_release_note_pdf(
     elements.append(header)
     elements.append(Spacer(1, 0.4*inch))
 
-    elements.append(Paragraph(f"<b>Wellysis {platform} SDK {version}</b>", subtitle))
+    elements.append(Paragraph(f"<b>{doc_title}</b>", subtitle))
     elements.append(Paragraph("<b>Release Notes</b>", title))
 
     elements.append(Paragraph(f"<b>Version:</b> {version}", normal))
