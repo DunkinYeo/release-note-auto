@@ -4,7 +4,9 @@ on:
   push:
     tags:
       - 'ios-sdk-*'
+      - 'iOS-sdk-*'
       - 'android-sdk-*'
+      - 'Android-sdk-*'
   workflow_dispatch:
     inputs:
       tag:
