@@ -1,27 +1,28 @@
-product_type: "sdk"
-product_name: "Wellysis"
-tag: "ios-sdk-2.1.7"
+product_type: "app"
+product_name: "S-patch Ex"
+tag: "spatchex-android-1.6.8"
 date: "February 25, 2026"
-platform: "iOS"
-version: "2.1.7"
+platform: "Android"
+version: "1.6.8"
 
 new_functionalities:
-  - "Added multi-lead ECG recording support."
-  - "New SpO2 continuous monitoring API."
+  - "Real-time ECG waveform display added."
+  - "Push notification support for device disconnection alerts."
+  - "Export report as PDF directly from the app."
 
 enhancements:
-  - "Improved BLE connection stability on iOS 17."
-  - "Reduced SDK initialization time by 30%."
-  - "Error handling improvements for timeout scenarios."
-  - "SDK documentation updated."
+  - "Improved BLE auto-reconnect on background mode."
+  - "Faster data sync with cloud — latency reduced by 40%."
+  - "UI/UX refresh for main dashboard."
+  - "Bug fix: crash on low memory devices resolved."
 
 previous_versions:
-  - version: "v2.1.6"
-    description: "Android SDK — Set/Get Sample Rate function added"
-  - version: "v2.1.5"
-    description: "Update SDK_EX_Guide.md content"
-  - version: "v2.1.4"
-    description: "Update Error handling fix code SDK file"
+  - version: "v1.6.7"
+    description: "iOS — Dark mode support added"
+  - version: "v1.6.6"
+    description: "BLE stability improvements"
+  - version: "v1.6.5"
+    description: "Initial cloud sync feature"
 
 contact:
   email: "spatch.cardio@wellysis.com"
