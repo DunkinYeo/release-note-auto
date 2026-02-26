@@ -75,11 +75,11 @@ def parse_tag(tag: str) -> Dict[str, str]:
             "version": m.group("version"),
         }
 
-    # Fallback — treat as SDK
+    # Fallback — unrecognized tag format
     return {
-        "product_type": "sdk",
-        "product_name": "Wellysis",
-        "platform": "iOS",
+        "product_type": "unknown",
+        "product_name": "",
+        "platform": "",
         "version": tag,
     }
 

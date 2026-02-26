@@ -52,13 +52,15 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Inject Slack webhook from secret
+      - name: Inject Slack secrets from repo secrets
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
         run: |
           [ -z "$SLACK_WEBHOOK_URL" ] && exit 0
           python - <<'PY'
-          import yaml, os, re
+          import yaml, os
 
           cfg_path = "config/release_config.yaml"
           with open(cfg_path, "r") as f:
@@ -67,6 +69,13 @@ jobs:
           cfg.setdefault("slack", {})
           cfg["slack"]["enabled"] = True
           cfg["slack"]["webhook_url"] = os.environ["SLACK_WEBHOOK_URL"]
+
+          token = os.environ.get("SLACK_TOKEN", "")
+          channel = os.environ.get("SLACK_CHANNEL", "")
+          if token:
+              cfg["slack"]["token"] = token
+          if channel:
+              cfg["slack"]["channel"] = channel
 
           with open(cfg_path, "w") as f:
               yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False)

@@ -60,6 +60,19 @@ def main():
         platform     = (args.platform     or cfg.get("platform")     or "").strip() or parsed["platform"]
         version      = (args.version      or cfg.get("version")      or "").strip() or parsed["version"]
 
+    # Safety guard: fail explicitly on unrecognized tag when no override is set
+    if product_type == "unknown":
+        print(f"ERROR: Tag '{latest_tag}' does not match any known convention.")
+        print("  SDK : ios-sdk-2.1.6   /  android-sdk-2.1.6")
+        print("  App : spatchex-ios-1.6.8  /  spatchex-android-1.6.8")
+        print("  FW  : fw-2.4.6")
+        print("Set product_type explicitly in config/release_config.yaml to override.")
+        import sys; sys.exit(1)
+
+    # Safety guard: FW has no platform
+    if product_type.lower() == "fw":
+        platform = ""
+
     # Collect commits between tags (if prev exists)
     commits = collect_commit_subjects(prev_tag, latest_tag)
 
@@ -98,7 +111,11 @@ def main():
         note = slack_cfg.get("channel_note", "")
         label = f"{product_name} {platform} {product_type.upper()} {version}".strip()
         msg = f"✅ {label} Release Notes generated ({date_str})." + (f" [{note}]" if note else "")
-        notify_webhook(slack_cfg["webhook_url"], msg, out_pdf, out_png)
+        notify_webhook(
+            slack_cfg["webhook_url"], msg, out_pdf, out_png,
+            token=slack_cfg.get("token", ""),
+            channel=slack_cfg.get("channel", ""),
+        )
 
     print("Done:")
     print(" PDF:", out_pdf)

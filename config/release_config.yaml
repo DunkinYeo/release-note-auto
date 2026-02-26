@@ -32,3 +32,5 @@ slack:
   enabled: false
   webhook_url: ""
   channel_note: ""
+  token: ""        # Bot token (xoxb-...) for file upload — set via SLACK_TOKEN secret in CI
+  channel: ""      # Channel ID (e.g. C01234ABCDE) where PDF/PNG will be uploaded
