@@ -73,14 +73,9 @@ def main():
     if product_type.lower() == "fw":
         platform = ""
 
-    # Collect commits between tags (if prev exists)
-    commits = collect_commit_subjects(prev_tag, latest_tag)
-
-    # Merge content: config items + derived commits (append under Enhancements)
+    # Content from config only
     new_funcs = cfg.get("new_functionalities") or []
     enhancements = cfg.get("enhancements") or []
-    if commits:
-        enhancements = enhancements + [f"(Git) {c}" for c in commits]
 
     previous_versions = cfg.get("previous_versions") or []
     contact = cfg.get("contact") or {}

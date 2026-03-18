@@ -74,17 +74,18 @@ def build_release_note_pdf(
     elements.append(Paragraph(f"<b>Version:</b> {version}", normal))
     elements.append(Paragraph(f"<b>Date:</b> {date}", normal))
 
-    # New Functionalities
-    elements.append(Paragraph("New Functionalities:", section))
-    for i, item in enumerate(new_functionalities, 1):
-        elements.append(Paragraph(f"{i}. {item}", normal))
+    # New Functionalities (hidden when empty)
+    if new_functionalities:
+        elements.append(Paragraph("New Functionalities:", section))
+        for i, item in enumerate(new_functionalities, 1):
+            elements.append(Paragraph(f"{i}. {item}", normal))
+        elements.append(Spacer(1, 0.2*inch))
 
-    elements.append(Spacer(1, 0.2*inch))
-
-    # Enhancements
-    elements.append(Paragraph("Enhancements:", section))
-    for i, item in enumerate(enhancements, 1):
-        elements.append(Paragraph(f"{i}. {item}", normal))
+    # Enhancements (hidden when empty)
+    if enhancements:
+        elements.append(Paragraph("Enhancements:", section))
+        for i, item in enumerate(enhancements, 1):
+            elements.append(Paragraph(f"{i}. {item}", normal))
 
     elements.append(Spacer(1, 0.25*inch))
     elements.append(HRFlowable(color=colors.lightgrey, thickness=1))
