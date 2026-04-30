@@ -1,70 +1,107 @@
-import os
 import requests
 
 
+def notify_slack(
+    token: str,
+    channel: str,
+    product_name: str,
+    version: str,
+    date: str,
+    product_type: str,
+    new_functionalities: list = None,
+    change_categories: list = None,
+    enhancements: list = None,
+    webhook_url: str = "",
+    artifact_url: str = "",
+):
+    blocks = _build_blocks(product_name, version, date, product_type,
+                           new_functionalities, change_categories, enhancements,
+                           artifact_url=artifact_url)
+
+    if token and channel:
+        r = requests.post(
+            "https://slack.com/api/chat.postMessage",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"channel": channel, "blocks": blocks,
+                  "text": f"{product_name} {version} Release Notes"},
+            timeout=15,
+        )
+        if not r.json().get("ok"):
+            print("Slack chat.postMessage failed:", r.json().get("error"))
+        else:
+            print("Slack message posted.")
+    elif webhook_url:
+        r = requests.post(webhook_url, json={"blocks": blocks}, timeout=15)
+        if not r.ok:
+            print("Slack webhook failed:", r.status_code)
+        else:
+            print("Slack webhook posted.")
+
+
+def _build_blocks(product_name, version, date, product_type,
+                  new_functionalities, change_categories, enhancements,
+                  artifact_url: str = ""):
+    label = f"{product_name} {product_type.upper()} {version}"
+    blocks = [
+        {
+            "type": "header",
+            "text": {"type": "plain_text", "text": f"📋 {label} Release Notes"},
+        },
+        {
+            "type": "context",
+            "elements": [{"type": "mrkdwn", "text": f"📅 {date}"}],
+        },
+        {"type": "divider"},
+    ]
+
+    if new_functionalities:
+        items = "\n".join(f"• {i}" for i in new_functionalities)
+        blocks.append({
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": f"*✨ New Functionalities*\n{items}"},
+        })
+        blocks.append({"type": "divider"})
+
+    if change_categories:
+        for cat in change_categories:
+            title = cat.get("title", "")
+            items = cat.get("items", [])
+            body = "\n".join(f"• {i}" for i in items)
+            blocks.append({
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"*{title}*\n{body}"},
+            })
+            blocks.append({"type": "divider"})
+    elif enhancements:
+        items = "\n".join(f"• {i}" for i in enhancements)
+        blocks.append({
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": f"*Enhancements*\n{items}"},
+        })
+        blocks.append({"type": "divider"})
+
+    if artifact_url:
+        blocks.append({
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "📥 PDF 다운로드"},
+                    "style": "primary",
+                    "url": artifact_url,
+                }
+            ],
+        })
+
+    return blocks
+
+
+# Legacy function kept for backward compatibility
 def notify_webhook(webhook_url: str, message: str, pdf_path: str, png_path: str,
                    token: str = "", channel: str = ""):
-    # 1. Send text via webhook
     payload = {"text": message}
     try:
         r = requests.post(webhook_url, json=payload, timeout=15)
         r.raise_for_status()
     except Exception as e:
         print("Slack webhook notify failed:", e)
-
-    # 2. Upload files via Slack API (requires bot token + channel)
-    if token and channel:
-        for file_path in [pdf_path, png_path]:
-            if os.path.isfile(file_path):
-                _upload_file(token, channel, file_path)
-
-
-def _upload_file(token: str, channel: str, file_path: str):
-    """Upload a file to Slack using the new Files API (getUploadURLExternal)."""
-    filename = os.path.basename(file_path)
-    file_size = os.path.getsize(file_path)
-
-    # Step 1: Get upload URL
-    try:
-        r1 = requests.post(
-            "https://slack.com/api/files.getUploadURLExternal",
-            headers={"Authorization": f"Bearer {token}"},
-            data={"filename": filename, "length": file_size},
-            timeout=30,
-        )
-        data1 = r1.json()
-        if not data1.get("ok"):
-            print(f"Slack upload URL error ({filename}):", data1.get("error"))
-            return
-        upload_url = data1["upload_url"]
-        file_id = data1["file_id"]
-    except Exception as e:
-        print(f"Slack upload URL request failed ({filename}):", e)
-        return
-
-    # Step 2: PUT file content to upload URL
-    try:
-        with open(file_path, "rb") as f:
-            r2 = requests.put(upload_url, data=f, timeout=60)
-        if not r2.ok:
-            print(f"Slack file PUT failed ({filename}): HTTP {r2.status_code}")
-            return
-    except Exception as e:
-        print(f"Slack file PUT error ({filename}):", e)
-        return
-
-    # Step 3: Complete upload and share to channel
-    try:
-        r3 = requests.post(
-            "https://slack.com/api/files.completeUploadExternal",
-            headers={"Authorization": f"Bearer {token}"},
-            json={"files": [{"id": file_id}], "channel_id": channel},
-            timeout=30,
-        )
-        data3 = r3.json()
-        if not data3.get("ok"):
-            print(f"Slack complete upload error ({filename}):", data3.get("error"))
-        else:
-            print(f"Slack file uploaded: {filename}")
-    except Exception as e:
-        print(f"Slack complete upload request failed ({filename}):", e)

@@ -52,36 +52,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Inject Slack secrets from repo secrets
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
-          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-        run: |
-          [ -z "$SLACK_WEBHOOK_URL" ] && exit 0
-          python - <<'PY'
-          import yaml, os
-
-          cfg_path = "config/release_config.yaml"
-          with open(cfg_path, "r") as f:
-              cfg = yaml.safe_load(f)
-
-          cfg.setdefault("slack", {})
-          cfg["slack"]["enabled"] = True
-          cfg["slack"]["webhook_url"] = os.environ["SLACK_WEBHOOK_URL"]
-
-          token = os.environ.get("SLACK_TOKEN", "")
-          channel = os.environ.get("SLACK_CHANNEL", "")
-          if token:
-              cfg["slack"]["token"] = token
-          if channel:
-              cfg["slack"]["channel"] = channel
-
-          with open(cfg_path, "w") as f:
-              yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False)
-          PY
-
-      - name: Generate PDF & Screenshot
+      - name: Generate PDF & Screenshot (Slack disabled — notified separately)
         env:
           INPUT_TAG:          ${{ github.event.inputs.tag }}
           INPUT_PLATFORM:     ${{ github.event.inputs.platform }}
@@ -89,6 +60,16 @@ jobs:
           INPUT_PRODUCT_TYPE: ${{ github.event.inputs.product_type }}
           INPUT_PRODUCT_NAME: ${{ github.event.inputs.product_name }}
         run: |
+          # Temporarily disable Slack so main.py doesn't notify — workflow handles it
+          python - <<'PY'
+          import yaml
+          with open("config/release_config.yaml") as f:
+              cfg = yaml.safe_load(f)
+          cfg.setdefault("slack", {})["enabled"] = False
+          with open("config/release_config.yaml", "w") as f:
+              yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False)
+          PY
+
           ARGS=()
           [ -n "$INPUT_TAG" ]          && ARGS+=(--tag          "$INPUT_TAG")
           [ -n "$INPUT_PLATFORM" ]     && ARGS+=(--platform     "$INPUT_PLATFORM")
@@ -110,3 +91,33 @@ jobs:
           name: release-notes-screenshot
           path: output/screenshot/*.png
           retention-days: 90
+
+      - name: Notify Slack with content + download link
+        env:
+          SLACK_TOKEN:   ${{ secrets.SLACK_TOKEN }}
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python - <<'PY'
+          import yaml, os, sys
+          sys.path.insert(0, ".")
+          from src.slack_notify import notify_slack
+
+          with open("config/release_config.yaml") as f:
+              cfg = yaml.safe_load(f)
+
+          notify_slack(
+              token        = os.environ.get("SLACK_TOKEN", ""),
+              channel      = os.environ.get("SLACK_CHANNEL", ""),
+              webhook_url  = os.environ.get("SLACK_WEBHOOK", ""),
+              product_name = cfg.get("product_name", ""),
+              version      = cfg.get("version", ""),
+              date         = cfg.get("date", ""),
+              product_type = cfg.get("product_type", "sdk"),
+              new_functionalities = cfg.get("new_functionalities") or [],
+              change_categories   = cfg.get("change_categories") or [],
+              enhancements        = cfg.get("enhancements") or [],
+              artifact_url = os.environ.get("RUN_URL", ""),
+          )
+          PY

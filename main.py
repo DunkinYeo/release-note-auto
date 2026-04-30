@@ -6,7 +6,7 @@ import yaml
 from src.git_tools import detect_tags, parse_tag, collect_commit_subjects
 from src.release_note import build_release_note_pdf
 from src.screenshot import pdf_to_png
-from src.slack_notify import notify_webhook
+from src.slack_notify import notify_slack
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -76,10 +76,15 @@ def main():
     # Content from config only
     new_funcs = cfg.get("new_functionalities") or []
     enhancements = cfg.get("enhancements") or []
+    change_categories = cfg.get("change_categories") or []
 
     previous_versions = cfg.get("previous_versions") or []
     contact = cfg.get("contact") or {}
     slack_cfg = cfg.get("slack") or {}
+    # Environment variables override config (for local use without committing secrets)
+    slack_cfg["webhook_url"] = os.environ.get("SLACK_WEBHOOK_URL") or slack_cfg.get("webhook_url", "")
+    slack_cfg["token"]       = os.environ.get("SLACK_TOKEN")       or slack_cfg.get("token", "")
+    slack_cfg["channel"]     = os.environ.get("SLACK_CHANNEL")     or slack_cfg.get("channel", "")
 
     # Build output filename from product info
     parts = [product_name.replace(" ", "_"), platform, product_type.upper(), version, "Release_Notes"]
@@ -94,6 +99,7 @@ def main():
         date=date_str,
         new_functionalities=new_funcs,
         enhancements=enhancements,
+        change_categories=change_categories,
         previous_versions=previous_versions,
         contact=contact,
         product_type=product_type,
@@ -102,14 +108,18 @@ def main():
 
     pdf_to_png(out_pdf, out_png, dpi=300)
 
-    if bool(slack_cfg.get("enabled")) and slack_cfg.get("webhook_url"):
-        note = slack_cfg.get("channel_note", "")
-        label = f"{product_name} {platform} {product_type.upper()} {version}".strip()
-        msg = f"✅ {label} Release Notes generated ({date_str})." + (f" [{note}]" if note else "")
-        notify_webhook(
-            slack_cfg["webhook_url"], msg, out_pdf, out_png,
+    if bool(slack_cfg.get("enabled")):
+        notify_slack(
             token=slack_cfg.get("token", ""),
             channel=slack_cfg.get("channel", ""),
+            webhook_url=slack_cfg.get("webhook_url", ""),
+            product_name=product_name,
+            version=version,
+            date=date_str,
+            product_type=product_type,
+            new_functionalities=new_funcs,
+            change_categories=change_categories,
+            enhancements=enhancements,
         )
 
     print("Done:")

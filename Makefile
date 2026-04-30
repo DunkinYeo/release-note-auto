@@ -19,4 +19,5 @@ clean:
 
 # 최근 생성된 PDF 바로 열기 (macOS)
 open:
-	@open output/pdf/*.pdf 2>/dev/null || echo "No PDF found in output/pdf/"
+	@latest=$$(ls -t output/pdf/*.pdf 2>/dev/null | head -1); \
+	if [ -n "$$latest" ]; then open "$$latest"; else echo "No PDF found in output/pdf/"; fi

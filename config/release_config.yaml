@@ -1,27 +1,52 @@
-product_type: "fw"
-product_name: "Wellysis"
-tag: "fw-2.4.6"
-date: "February 25, 2026"
+product_type: "app"
+product_name: "S-patch Medi Mobile"
+tag: ""
+date: "April 30, 2026"
 platform: ""
-version: "2.4.6"
+version: "1.0.9"
 
-new_functionalities:
-  - "Low-battery BLE alert added (below 10%)."
-  - "New self-diagnostic mode on device boot."
+new_functionalities: []
 
-enhancements:
-  - "ECG signal quality improved — noise reduction algorithm updated."
-  - "Reduced power consumption in idle mode by 25%."
-  - "BLE stack upgraded to v5.2 for improved stability."
-  - "Memory leak fix in continuous recording mode."
+change_categories:
+  - title: "Reset Timing Change"
+    items:
+      - "Reset point moved from after exam end to before exam start — device retains data until next exam begins, then auto-resets."
 
-previous_versions:
-  - version: "v2.4.5"
-    description: "BLE connection timeout handling improved"
-  - version: "v2.4.4"
-    description: "ECG sampling rate accuracy fix"
-  - version: "v2.4.3"
-    description: "Initial SpO2 sensor integration"
+  - title: "Device Connection Stability"
+    items:
+      - "Improved Bluetooth connection stability."
+      - "Fixed intermittent disconnection (with error message output) occurring during connection attempts."
+
+  - title: "Data Upload Process"
+    items:
+      - "Fixed Unzip failure issue."
+      - "Fixed data packet corruption issue during upload."
+      - "Fixed app crash when attempting to share file via email during upload."
+      - "Fixed upload process halting after patching completes."
+
+  - title: "Usability Improvements"
+    items:
+      - "Ex exam data can now be uploaded directly from the Medi app exam list."
+      - "New exam can be started while a data upload is in progress."
+      - "Navigation restrictions during upload improved — most pages now accessible."
+      - "Hidden Tests excluded from the exam list (manageable via web portal)."
+      - "Exam list screen loading speed improved."
+
+  - title: "UI Changes"
+    items:
+      - "File management screen layout changed from card view to list view."
+      - "Exam info screen UI updated."
+
+  - title: "Bug Fixes"
+    items:
+      - "Fixed white screen displayed instead of graph in connected state."
+      - "Fixed region select box overlapping ID input label on login screen."
+      - "Fixed unresponsive button tap issue."
+      - "Various additional UI improvements and bug fixes."
+
+enhancements: []
+
+previous_versions: []
 
 contact:
   email: "spatch.cardio@wellysis.com"
@@ -29,8 +54,8 @@ contact:
   address: "2450 Holcombe Blvd, Houston, TX 77021"
 
 slack:
-  enabled: false
-  webhook_url: ""
+  enabled: true
+  webhook_url: ""   # set via SLACK_WEBHOOK_URL env var or GitHub secret
   channel_note: ""
-  token: ""        # Bot token (xoxb-...) for file upload — set via SLACK_TOKEN secret in CI
-  channel: ""      # Channel ID (e.g. C01234ABCDE) where PDF/PNG will be uploaded
+  token: ""         # set via SLACK_TOKEN env var or GitHub secret
+  channel: ""       # set via SLACK_CHANNEL env var or GitHub secret
