@@ -1,48 +1,35 @@
 product_type: "app"
-product_name: "S-patch Medi Mobile"
+product_name: "S-patch Admin"
 tag: ""
-date: "April 30, 2026"
-platform: ""
-version: "1.0.9"
+date: "May 15, 2026"
+platform: "Android / iOS"
+version: "1.0.0"
 
 new_functionalities: []
 
+section_title: "Key Features"
+
 change_categories:
-  - title: "Reset Timing Change"
+  - title: "Device Information"
     items:
-      - "Reset point moved from after exam end to before exam start — device retains data until next exam begins, then auto-resets."
+      - "View HW / SW / FW version."
+      - "View current Bonding mode, Sampling Rate, and Device Type & Serial Number."
 
-  - title: "Device Connection Stability"
+  - title: "DFU (Device Firmware Update)"
     items:
-      - "Improved Bluetooth connection stability."
-      - "Fixed intermittent disconnection (with error message output) occurring during connection attempts."
+      - "Wirelessly update S-patch device firmware via Bluetooth."
 
-  - title: "Data Upload Process"
+  - title: "Change Bonding Mode"
     items:
-      - "Fixed Unzip failure issue."
-      - "Fixed data packet corruption issue during upload."
-      - "Fixed app crash when attempting to share file via email during upload."
-      - "Fixed upload process halting after patching completes."
+      - "Switch between Bonding and Non-Bonding mode."
 
-  - title: "Usability Improvements"
+  - title: "Change Sampling Rate"
     items:
-      - "Ex exam data can now be uploaded directly from the Medi app exam list."
-      - "New exam can be started while a data upload is in progress."
-      - "Navigation restrictions during upload improved — most pages now accessible."
-      - "Hidden Tests excluded from the exam list (manageable via web portal)."
-      - "Exam list screen loading speed improved."
+      - "Select sampling rate: 256Hz or 128Hz."
 
-  - title: "UI Changes"
+  - title: "Change S-patch Type & Serial Number"
     items:
-      - "File management screen layout changed from card view to list view."
-      - "Exam info screen UI updated."
-
-  - title: "Bug Fixes"
-    items:
-      - "Fixed white screen displayed instead of graph in connected state."
-      - "Fixed region select box overlapping ID input label on login screen."
-      - "Fixed unresponsive button tap issue."
-      - "Various additional UI improvements and bug fixes."
+      - "Configure the device type and serial number of the S-patch device."
 
 enhancements: []
 

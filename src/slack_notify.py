@@ -1,4 +1,55 @@
+import os
 import requests
+
+
+def upload_pdf_to_slack(token: str, channel: str, file_path: str) -> str:
+    """Upload PDF to Slack (v2 API) and return its permalink, or empty string on failure."""
+    filename = os.path.basename(file_path)
+    file_size = os.path.getsize(file_path)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    try:
+        # Step 1: get upload URL
+        r1 = requests.post(
+            "https://slack.com/api/files.getUploadURLExternal",
+            headers=headers,
+            data={"filename": filename, "length": file_size},
+            timeout=15,
+        )
+        resp1 = r1.json()
+        if not resp1.get("ok"):
+            print("Slack getUploadURL failed:", resp1.get("error"))
+            return ""
+        upload_url = resp1["upload_url"]
+        file_id = resp1["file_id"]
+
+        # Step 2: upload file content
+        with open(file_path, "rb") as f:
+            r2 = requests.post(
+                upload_url,
+                files={"filename": (filename, f, "application/pdf")},
+                timeout=60,
+            )
+        if not r2.ok:
+            print("Slack upload POST failed:", r2.status_code, r2.text[:200])
+            return ""
+
+        # Step 3: complete upload and share to channel
+        r3 = requests.post(
+            "https://slack.com/api/files.completeUploadExternal",
+            headers=headers,
+            json={"files": [{"id": file_id, "title": filename}], "channel_id": channel},
+            timeout=15,
+        )
+        resp3 = r3.json()
+        if resp3.get("ok"):
+            permalink = resp3.get("files", [{}])[0].get("permalink", "")
+            print("PDF uploaded to Slack:", permalink)
+            return permalink
+        print("Slack completeUpload failed:", resp3.get("error"))
+    except Exception as e:
+        print("Slack file upload error:", e)
+    return ""
 
 
 def notify_slack(

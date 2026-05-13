@@ -1,5 +1,8 @@
 .PHONY: run setup clean open
 
+-include .env
+export
+
 # 한번에 실행 — 의존성 자동 설치 후 릴리즈노트 생성
 run:
 	@echo "📦 Installing dependencies..."

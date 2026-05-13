@@ -6,7 +6,7 @@ import yaml
 from src.git_tools import detect_tags, parse_tag, collect_commit_subjects
 from src.release_note import build_release_note_pdf
 from src.screenshot import pdf_to_png
-from src.slack_notify import notify_slack
+from src.slack_notify import notify_slack, upload_pdf_to_slack
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -87,7 +87,8 @@ def main():
     slack_cfg["channel"]     = os.environ.get("SLACK_CHANNEL")     or slack_cfg.get("channel", "")
 
     # Build output filename from product info
-    parts = [product_name.replace(" ", "_"), platform, product_type.upper(), version, "Release_Notes"]
+    safe_platform = platform.replace(" / ", "_").replace("/", "_").replace(" ", "_")
+    parts = [product_name.replace(" ", "_"), safe_platform, product_type.upper(), version, "Release_Notes"]
     base = "_".join(p for p in parts if p)
     out_pdf = os.path.join(ROOT, "output", "pdf", f"{base}.pdf")
     out_png = os.path.join(ROOT, "output", "screenshot", f"{base}.png")
@@ -104,14 +105,21 @@ def main():
         contact=contact,
         product_type=product_type,
         product_name=product_name,
+        section_title=cfg.get("section_title", ""),
     )
 
     pdf_to_png(out_pdf, out_png, dpi=300)
 
     if bool(slack_cfg.get("enabled")):
+        artifact_url = ""
+        token = slack_cfg.get("token", "")
+        channel = slack_cfg.get("channel", "")
+        if token and channel:
+            artifact_url = upload_pdf_to_slack(token, channel, out_pdf)
+
         notify_slack(
-            token=slack_cfg.get("token", ""),
-            channel=slack_cfg.get("channel", ""),
+            token=token,
+            channel=channel,
             webhook_url=slack_cfg.get("webhook_url", ""),
             product_name=product_name,
             version=version,
@@ -120,6 +128,7 @@ def main():
             new_functionalities=new_funcs,
             change_categories=change_categories,
             enhancements=enhancements,
+            artifact_url=artifact_url,
         )
 
     print("Done:")
